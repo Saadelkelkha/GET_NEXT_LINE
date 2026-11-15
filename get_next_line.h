@@ -6,7 +6,7 @@
 /*   By: sel-kelk <sel-kelk@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/11/14 10:36:46 by sel-kelk          #+#    #+#             */
-/*   Updated: 2026/11/15 11:25:47 by sel-kelk         ###   ########.fr       */
+/*   Updated: 2026/11/15 12:05:14 by sel-kelk         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,6 @@
 # include <fcntl.h>
 # include <unistd.h>
 # include <stdlib.h>
-
 
 # ifndef BUFFER_SIZE
 #  define BUFFER_SIZE 42

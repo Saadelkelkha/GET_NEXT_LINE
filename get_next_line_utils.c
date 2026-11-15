@@ -6,7 +6,7 @@
 /*   By: sel-kelk <sel-kelk@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/11/14 10:36:37 by sel-kelk          #+#    #+#             */
-/*   Updated: 2026/11/15 10:31:14 by sel-kelk         ###   ########.fr       */
+/*   Updated: 2026/11/15 12:05:32 by sel-kelk         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -58,6 +58,7 @@ void	ft_copy_leftover_to_leftover(char *buf, char *leftover)
 		ft_strlcpy(leftover, buf + ft_strlen_until_terminator(buf) + 1,
 			BUFFER_SIZE + 1);
 		buf[ft_strlen_until_terminator(buf) + 1] = '\0';
-	}else
+	}
+	else
 		leftover[0] = '\0';
 }

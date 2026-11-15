@@ -6,7 +6,7 @@
 /*   By: sel-kelk <sel-kelk@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/11/14 10:36:28 by sel-kelk          #+#    #+#             */
-/*   Updated: 2026/11/15 11:59:19 by sel-kelk         ###   ########.fr       */
+/*   Updated: 2026/11/15 13:03:35 by sel-kelk         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -84,7 +84,6 @@ char	*get_next_line(int fd)
 	char		*line;
 	char		*older_line;
 	char		*new_line;
-	char		*the_real_line;
 	int			old;
 
 	new_line = get_next_line_helper(fd);
@@ -111,14 +110,5 @@ char	*get_next_line(int fd)
 	}
 	if (!ft_strlen(line))
 		return (NULL);
-	the_real_line = malloc(ft_strlen(line) + 1);
-	if (!the_real_line)
-	{
-		free(line);
-		return (NULL);
-	}
-	the_real_line[0] = '\0';
-	ft_strlcat(the_real_line, line, ft_strlen(line) + 1);
-	free(line);
-	return (the_real_line);
+	return (line);
 }
