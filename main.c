@@ -262,8 +262,9 @@ int	main(int argc, char **argv)
 				fd[i] = -1;
 				alive--;
 			}
-			else
-				printf("fd%d: [%s]", i, line);
+			else{
+				printf("fd%d: %s\n", i, line);
+			}
 			free(line);
 		}
 	}

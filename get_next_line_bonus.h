@@ -6,7 +6,7 @@
 /*   By: sel-kelk <sel-kelk@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/11/14 10:36:46 by sel-kelk          #+#    #+#             */
-/*   Updated: 2026/11/15 14:56:00 by sel-kelk         ###   ########.fr       */
+/*   Updated: 2026/11/16 11:19:37 by sel-kelk         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,7 @@
 # endif
 
 typedef struct s_list{
-	char	leftover[BUFFER_SIZE + 1];
+	char	*leftover;
 	int		fd;
 	struct s_list	*next;
 }	t_list;

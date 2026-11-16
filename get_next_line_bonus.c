@@ -6,7 +6,7 @@
 /*   By: sel-kelk <sel-kelk@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/11/14 10:36:28 by sel-kelk          #+#    #+#             */
-/*   Updated: 2026/11/15 14:59:51 by sel-kelk         ###   ########.fr       */
+/*   Updated: 2026/11/16 11:20:08 by sel-kelk         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,38 +20,93 @@ t_list	*ft_lstnew(int fd)
 	if (!lst)
 		return (NULL);
 	lst->fd = fd;
-	lst->leftover = NULL;
+	lst->leftover = malloc(BUFFER_SIZE + 1);
+	if (!lst->leftover)
+		return (NULL);
+	lst->leftover[0] = '\0';
 	lst->next = NULL;
 	return (lst);
 }
 
 char	*get_leftover(t_list **leftover_list, int fd)
 {
-	t_list	**leftover_list_c;
+	t_list	*leftover_list_c;
+	char	*ret_leftover;
+	int	i;
 
-	leftover_list_c = leftover_list;
-	if (*leftover_list_c)
+	i = 0;
+	leftover_list_c = *leftover_list;
+	if (*leftover_list)
 	{
-		while ((*leftover_list_c)->next)
+		while ((*leftover_list)->next)
 		{
-			if ((*leftover_list_c)->fd == fd)
-				return ((*leftover_list_c)->leftover);
-			*leftover_list_c = (*leftover_list_c)->next;
+			if ((*leftover_list)->fd == fd)
+			{
+				ret_leftover = (*leftover_list)->leftover;
+				*leftover_list = leftover_list_c;
+				return (ret_leftover);
+			}
+			*leftover_list = (*leftover_list)->next;
+			i++;
 		}
-		(*leftover_list_c)->next = ft_lstnew(fd);
-		return ((*leftover_list_c)->next->leftover);
+		if ((*leftover_list)->fd == fd)
+		{
+			ret_leftover = (*leftover_list)->leftover;
+			*leftover_list = leftover_list_c;
+			return (ret_leftover);
+		}
+		(*leftover_list)->next = ft_lstnew(fd);
+		ret_leftover = (*leftover_list)->next->leftover;
+		*leftover_list = leftover_list_c;
+		return (ret_leftover);
 	}
-	*leftover_list_c = ft_lstnew(fd);
-	return ((*leftover_list_c)->leftover);
+	*leftover_list = ft_lstnew(fd);
+	ret_leftover = (*leftover_list)->leftover;
+	return (ret_leftover);
+}
+void	ft_lstdelone(t_list **lst, int fd)
+{
+	t_list	*next;
+	t_list	*leftover_list_c;
+
+	if (lst)
+	{
+		leftover_list_c = *lst;
+		if ((*lst)->fd == fd)
+		{
+			free((*lst)->leftover);
+			next = (*lst)->next;
+			free(*lst);
+			*lst = next;
+			leftover_list_c = *lst;
+		}
+		else
+		{
+			while ((*lst)->next)
+			{
+				if ((*lst)->next->fd == fd)
+				{
+					free((*lst)->next->leftover);
+					next = (*lst)->next->next;
+					free((*lst)->next);
+					(*lst)->next = next;
+					break ;
+				}
+				else
+					*lst = (*lst)->next;
+			}
+		}
+		*lst = leftover_list_c;
+	}
 }
 
 char	*get_next_line_helper(int fd)
 {
 	static t_list	*leftover_list;
-	char	*leftover;
-	char		*buf;
-	ssize_t		ret;
-	int			old;
+	char			*leftover;
+	char			*buf;
+	ssize_t			ret;
+	int				old;
 
 	leftover = get_leftover(&leftover_list, fd);
 	buf = malloc(BUFFER_SIZE + 1);
@@ -66,6 +121,7 @@ char	*get_next_line_helper(int fd)
 		buf[old + ret] = '\0';
 	if (!ft_strlen(buf) || ret == -1)
 	{
+		ft_lstdelone(&leftover_list, fd);
 		free(buf);
 		return (NULL);
 	}
