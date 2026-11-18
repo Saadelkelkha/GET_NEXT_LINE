@@ -84,24 +84,6 @@ echo "hello" | ./gnl       # read from a pipe / standard input
 
 The caller owns each returned line and must `free` it.
 
-### Testing
-
-```sh
-# Different buffer sizes must give identical output
-for n in 1 2 7 42 9999 10000000; do
-	cc -Wall -Wextra -Werror -D BUFFER_SIZE=$n get_next_line.c get_next_line_utils.c main.c -o gnl
-	./gnl my_file.txt
-done
-
-# Memory errors and leaks
-valgrind --leak-check=full ./gnl my_file.txt
-
-# Norm
-norminette get_next_line.c get_next_line_utils.c get_next_line.h
-```
-
-Cases worth testing: an empty file, a file with only newlines, a last line without `\n`, very long lines (much longer than `BUFFER_SIZE`), an invalid file descriptor (`-1`), and standard input.
-
 ## Algorithm
 
 ### Idea
@@ -171,5 +153,3 @@ A linked list was chosen over a fixed array indexed by `fd` because it has no ma
 AI (Claude) was used as a **learning aid**, not as a replacement for writing the project. It was used for:
 
 - **Explaining concepts:** `static` variables and where they are stored, how `read()` behaves (partial reads, return values), how file descriptors relate to the kernel, `malloc`/`free` ownership and dangling pointers, `BUFFER_SIZE` and the `-D` compiler flag, system calls versus library functions.
-
-The algorithm was designed and the code was written, tested and understood by me, and I can explain every function during the evaluation.

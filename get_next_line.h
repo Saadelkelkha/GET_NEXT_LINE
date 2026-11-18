@@ -6,7 +6,7 @@
 /*   By: sel-kelk <sel-kelk@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/11/14 10:36:46 by sel-kelk          #+#    #+#             */
-/*   Updated: 2026/11/15 12:05:14 by sel-kelk         ###   ########.fr       */
+/*   Updated: 2026/11/18 13:31:59 by sel-kelk         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,6 +25,8 @@ ssize_t	ft_strlen(const char *s);
 ssize_t	ft_strlcpy(char *dst, const char *src, size_t size);
 ssize_t	ft_strlen_until_terminator(char *buf);
 void	ft_copy_leftover_to_leftover(char *buf, char *leftover);
+char	*get_next_line_helper(int fd);
+int		its_line(int old, char *older_line, char *new_line);
 char	*get_next_line(int fd);
 
 #endif
