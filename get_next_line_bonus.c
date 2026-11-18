@@ -6,97 +6,70 @@
 /*   By: sel-kelk <sel-kelk@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/11/14 10:36:28 by sel-kelk          #+#    #+#             */
-/*   Updated: 2026/11/16 11:20:08 by sel-kelk         ###   ########.fr       */
+/*   Updated: 2026/11/18 11:03:19 by sel-kelk         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "get_next_line_bonus.h"
 
-t_list	*ft_lstnew(int fd)
+char	*get_leftover(t_list **head, int fd)
 {
-	t_list	*lst;
+	t_list	*node;
 
-	lst = malloc(sizeof(t_list));
-	if (!lst)
+	node = *head;
+	while (node && node->fd != fd)
+		node = node->next;
+	if (node)
+		return (node->leftover);
+	node = malloc(sizeof(t_list));
+	if (!node)
 		return (NULL);
-	lst->fd = fd;
-	lst->leftover = malloc(BUFFER_SIZE + 1);
-	if (!lst->leftover)
+	node->fd = fd;
+	node->leftover = malloc(BUFFER_SIZE + 1);
+	if (!node->leftover)
 		return (NULL);
-	lst->leftover[0] = '\0';
-	lst->next = NULL;
-	return (lst);
+	node->leftover[0] = '\0';
+	node->next = *head;
+	*head = node;
+	return (node->leftover);
 }
 
-char	*get_leftover(t_list **leftover_list, int fd)
-{
-	t_list	*leftover_list_c;
-	char	*ret_leftover;
-	int	i;
-
-	i = 0;
-	leftover_list_c = *leftover_list;
-	if (*leftover_list)
-	{
-		while ((*leftover_list)->next)
-		{
-			if ((*leftover_list)->fd == fd)
-			{
-				ret_leftover = (*leftover_list)->leftover;
-				*leftover_list = leftover_list_c;
-				return (ret_leftover);
-			}
-			*leftover_list = (*leftover_list)->next;
-			i++;
-		}
-		if ((*leftover_list)->fd == fd)
-		{
-			ret_leftover = (*leftover_list)->leftover;
-			*leftover_list = leftover_list_c;
-			return (ret_leftover);
-		}
-		(*leftover_list)->next = ft_lstnew(fd);
-		ret_leftover = (*leftover_list)->next->leftover;
-		*leftover_list = leftover_list_c;
-		return (ret_leftover);
-	}
-	*leftover_list = ft_lstnew(fd);
-	ret_leftover = (*leftover_list)->leftover;
-	return (ret_leftover);
-}
-void	ft_lstdelone(t_list **lst, int fd)
+void	ft_lstdelone_helper(t_list **head, t_list *prev, t_list *node)
 {
 	t_list	*next;
-	t_list	*leftover_list_c;
 
-	if (lst)
+	free(node->leftover);
+	next = node->next;
+	free(node);
+	node = next;
+	if (prev)
+		prev->next = next;
+	else
+		*head = next;
+}
+
+void	ft_lstdelone(t_list **head, int fd)
+{
+	t_list	*node;
+	t_list	*prev;
+
+	if (head)
 	{
-		leftover_list_c = *lst;
-		if ((*lst)->fd == fd)
+		node = *head;
+		prev = NULL;
+		while ((node))
 		{
-			free((*lst)->leftover);
-			next = (*lst)->next;
-			free(*lst);
-			*lst = next;
-			leftover_list_c = *lst;
-		}
-		else
-		{
-			while ((*lst)->next)
+			if (node->fd == fd)
 			{
-				if ((*lst)->next->fd == fd)
-				{
-					free((*lst)->next->leftover);
-					next = (*lst)->next->next;
-					free((*lst)->next);
-					(*lst)->next = next;
-					break ;
-				}
-				else
-					*lst = (*lst)->next;
+				ft_lstdelone_helper(head, prev, node);
+				break ;
+			}
+			else
+			{
+				prev = node;
+				node = node->next;
 			}
 		}
-		*lst = leftover_list_c;
 	}
 }
 
@@ -113,9 +86,7 @@ char	*get_next_line_helper(int fd)
 	if (!buf)
 		return (NULL);
 	buf[0] = '\0';
-	if (ft_strlen(leftover))
-		ft_strlcpy(buf, leftover, BUFFER_SIZE + 1);
-	old = ft_strlen(buf);
+	old = ft_strlcpy(buf, leftover, BUFFER_SIZE + 1);
 	ret = read(fd, buf + old, BUFFER_SIZE - ft_strlen(buf));
 	if (ret >= 0)
 		buf[old + ret] = '\0';
@@ -125,49 +96,8 @@ char	*get_next_line_helper(int fd)
 		free(buf);
 		return (NULL);
 	}
-	else
-	{
-		ft_copy_leftover_to_leftover(buf, leftover);
-		return (buf);
-	}
-}
-
-size_t	ft_strlcat(char *dst, const char *src, size_t size)
-{
-	size_t	i;
-	size_t	j;
-	size_t	srclen;
-
-	i = 0;
-	while (i < size && dst[i] != '\0')
-		i++;
-	srclen = ft_strlen(src);
-	if (i < size)
-	{
-		j = 0;
-		while ((i + j + 1) < size && src[j] != '\0')
-		{
-			dst[i + j] = src[j];
-			j++;
-		}
-		dst[i + j] = '\0';
-		return (i + srclen);
-	}
-	return (size + srclen);
-}
-
-int	has_new_line(char *new_line)
-{
-	size_t	i;
-
-	i = 0;
-	while (new_line[i])
-	{
-		if (new_line[i] == '\n')
-			return (1);
-		i++;
-	}
-	return (0);
+	ft_copy_leftover_to_leftover(buf, leftover);
+	return (buf);
 }
 
 char	*get_next_line(int fd)
@@ -187,15 +117,10 @@ char	*get_next_line(int fd)
 		if (!line)
 			return (NULL);
 		line[0] = '\0';
-		ft_strlcat(line, older_line, old + BUFFER_SIZE + 1);
-		ft_strlcat(line, new_line, old + BUFFER_SIZE + 1);
-		if (old)
-			free(older_line);
-		if (has_new_line(new_line))
-		{
-			free(new_line);
+		ft_strlcpy(line, older_line, old + BUFFER_SIZE + 1);
+		ft_strlcpy(line + ft_strlen(line), new_line, old + BUFFER_SIZE + 1);
+		if (its_line(old, older_line, new_line))
 			break ;
-		}
 		free(new_line);
 		new_line = get_next_line_helper(fd);
 	}
