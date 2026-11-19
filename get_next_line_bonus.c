@@ -6,7 +6,7 @@
 /*   By: sel-kelk <sel-kelk@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/11/14 10:36:28 by sel-kelk          #+#    #+#             */
-/*   Updated: 2026/11/18 11:03:19 by sel-kelk         ###   ########.fr       */
+/*   Updated: 2026/11/19 17:21:14 by sel-kelk         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -87,7 +87,7 @@ char	*get_next_line_helper(int fd)
 		return (NULL);
 	buf[0] = '\0';
 	old = ft_strlcpy(buf, leftover, BUFFER_SIZE + 1);
-	ret = read(fd, buf + old, BUFFER_SIZE - ft_strlen(buf));
+	ret = read(fd, buf + old, BUFFER_SIZE - old);
 	if (ret >= 0)
 		buf[old + ret] = '\0';
 	if (!ft_strlen(buf) || ret == -1)
