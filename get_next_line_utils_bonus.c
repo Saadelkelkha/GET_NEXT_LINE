@@ -6,7 +6,7 @@
 /*   By: sel-kelk <sel-kelk@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/11/14 10:36:37 by sel-kelk          #+#    #+#             */
-/*   Updated: 2026/11/18 10:30:21 by sel-kelk         ###   ########.fr       */
+/*   Updated: 2026/11/22 09:41:43 by sel-kelk         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -56,21 +56,31 @@ void	ft_copy_leftover_to_leftover(char *buf, char *leftover)
 	if (ft_strlen(buf) > ft_strlen_until_terminator(buf))
 	{
 		ft_strlcpy(leftover, buf + ft_strlen_until_terminator(buf) + 1,
-			BUFFER_SIZE + 1);
+			(size_t)BUFFER_SIZE + 1);
 		buf[ft_strlen_until_terminator(buf) + 1] = '\0';
 	}
 	else
 		leftover[0] = '\0';
 }
 
-int	its_line(int old, char *older_line, char *new_line)
+int	its_line_or_free_lines(int old, char *older_line, char *new_line, int swap)
 {
-	if (old)
-		free(older_line);
-	if (ft_strlen(new_line) > ft_strlen_until_terminator(new_line))
+	if (swap == 2)
 	{
-		free(new_line);
-		return (1);
+		if (old)
+			free(older_line);
+		if (ft_strlen(new_line) > ft_strlen_until_terminator(new_line))
+		{
+			free(new_line);
+			return (1);
+		}
+		return (0);
 	}
-	return (0);
+	else
+	{
+		if (old)
+			free(older_line);
+		free(new_line);
+		return (2);
+	}
 }

@@ -90,53 +90,58 @@ The caller owns each returned line and must `free` it.
 
 `read()` returns raw bytes and knows nothing about lines. One call can return half a line, exactly one line, or several lines. The function therefore needs two things:
 
-1. a loop that **keeps reading until a `\n` is found or the end of the file is reached**, and
+1. a way to **read the file piece by piece**, one `read` of at most `BUFFER_SIZE` bytes at a time, until a `\n` is found or the end of the file is reached, and
 2. a place to **remember the bytes that were read but not yet returned** between two calls.
 
 The second point is the reason for the `static` variable: it keeps the unread text alive after the function returns.
 
 ### Mandatory part
 
-A `static char *` holds the unread text. It is a `malloc`ed string (or `NULL` when nothing is stored), so it can grow to any length and is not limited to `BUFFER_SIZE`.
+The work is split in two functions.
 
-On each call:
+**`get_next_line_helper(fd)`** performs **one `read`** and returns one piece of text. It uses a `static char leftover[BUFFER_SIZE]` that holds text read earlier but not yet returned.
 
-1. **Check the arguments.** An invalid file descriptor (or a non-positive `BUFFER_SIZE`) returns `NULL`.
-2. **Read loop.** While the stored text contains no `\n`, call `read(fd, buffer, BUFFER_SIZE)`.
-   - If `read` returns `-1`, free everything, reset the stored text to `NULL` and return `NULL`.
-   - If `read` returns `0`, the end of the file was reached, so the loop stops.
-   - Otherwise a `'\0'` is written right after the bytes that were read, and the chunk is appended to the stored text by building a new string and freeing the old one.
-3. **Nothing stored.** If the stored text is empty or `NULL` after the loop, free it, reset it to `NULL` and return `NULL`.
-4. **Extract the line.** Copy the stored text up to and including the first `\n` (or the whole text if there is none) into a new `malloc`ed string. This copy is what the caller receives.
-5. **Keep the rest.** The stored text becomes what comes after the `\n`, or `NULL` if nothing is left. The old block is freed.
+1. Allocate a buffer of `BUFFER_SIZE + 1` bytes.
+2. Copy the leftover into the buffer, then call `read` to fill the rest of the buffer (at most `BUFFER_SIZE` characters in total) and add a `'\0'`.
+3. If the buffer is empty, or `read` returned `-1`, free the buffer and return `NULL` (end of file or error).
+4. If the buffer contains a `\n`, everything after the first `\n` is saved back into the leftover and cut from the buffer. Otherwise the leftover is emptied.
+5. Return the buffer.
+
+**`get_next_line(fd)`** builds the line from these pieces.
+
+1. Call the helper to get a piece.
+2. Join it to the text accumulated so far by allocating a new string and freeing the old one.
+3. If the piece contains a `\n`, the line is complete and it is returned. Otherwise, call the helper again.
+4. If the helper returns `NULL`, the loop stops. The text accumulated so far is returned, or `NULL` if it is empty.
+5. If a `malloc` fails, everything allocated so far is freed and `NULL` is returned.
 
 ### Why this design
 
-- **One `read` per iteration, never reading more than needed.** The loop stops as soon as a `\n` is available, so the file is never read entirely in advance, as the subject requires.
-- **The line is a separate copy.** The caller can `free` it freely, and it never shares memory with the stored text.
-- **A dynamically sized stored text** works for every `BUFFER_SIZE`: with size 1 a line is built byte by byte, and with a huge size one read can contain many lines that are handed out one per call.
-- **The stored text is always either a valid `'\0'`-terminated string or `NULL`**, so every helper has a clear, safe contract.
-- **Memory ownership is explicit.** Each block is freed exactly once: the old stored text when it is replaced, the read buffer at the end of the loop, and the stored text when the file ends or an error occurs.
+- **One `read` per helper call.** The file is never read further than needed, as the subject requires.
+- **The leftover needs only `BUFFER_SIZE` bytes.** It is saved only when the buffer contains a `\n`, and it holds what comes after it. Since the `\n` takes at least one character, the leftover holds at most `BUFFER_SIZE - 1` characters plus the `'\0'`.
+- **The line is a separate copy.** The caller can `free` it freely, and it never shares memory with the leftover.
+- **It works for every `BUFFER_SIZE`:** with size 1 a line is built one character at a time, and with a huge size one `read` can contain many lines that are handed out one per call.
+- **Memory ownership is explicit.** Each piece returned by the helper is freed by `get_next_line` once it has been joined, and the previous accumulated text is freed each time it is replaced.
 
-**Trade-off.** Appending a chunk copies the text accumulated so far into a new block. For a very long line read with a very small `BUFFER_SIZE`, this makes the cost grow with the length of the line divided by `BUFFER_SIZE`. It is simple, safe and fast enough for normal use, and it avoids the complexity of resizing buffers or keeping a list of chunks.
+**Trade-off.** Joining a piece copies the text accumulated so far into a new block. For a very long line read with a very small `BUFFER_SIZE`, the total cost grows with the square of the line length. It is simple, safe and fast enough for normal use, and it avoids the complexity of resizing buffers or keeping a list of chunks.
 
 ### Bonus part
 
-The unread text can no longer be a single variable, because each file descriptor needs its own. The bonus keeps **one node per file descriptor** in a singly linked list:
+The leftover can no longer be a single array, because each file descriptor needs its own. The bonus keeps **one node per file descriptor** in a singly linked list:
 
 ```c
 typedef struct s_list
 {
+	char			*leftover;
 	int				fd;
-	char			*leftover;   /* unread text of this fd, or NULL */
 	struct s_list	*next;
 }	t_list;
 ```
 
-- The head of the list is the **only `static` variable**: `static t_list *list;`.
-- At the start of a call, the node for `fd` is searched in the list. If it does not exist, it is created with `leftover = NULL` and added to the list.
+- The head of the list is the **only `static` variable**: `static t_list *leftover_list;`.
+- At the start of each helper call, the node for `fd` is searched in the list. If it does not exist, it is created with a `malloc`ed leftover of `BUFFER_SIZE` bytes, set to an empty string, and added to the list. If `fd < 0` or `BUFFER_SIZE <= 0`, or if an allocation fails, `NULL` is returned.
 - The reading algorithm is exactly the one above, but it works on `node->leftover`.
-- When a file descriptor reaches its end (or an error occurs), its text and its node are freed and unlinked from the list, so the memory is released and the same fd number can be reused later by another file.
+- When the helper returns `NULL` because a file descriptor reached its end (or an error occurred), its leftover and its node are freed and unlinked from the list, so the memory is released and the same fd number can be reused later by another file.
 
 A linked list was chosen over a fixed array indexed by `fd` because it has no maximum number of file descriptors, and it still counts as a single static variable, since the nodes themselves live on the heap.
 

@@ -6,7 +6,7 @@
 /*   By: sel-kelk <sel-kelk@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/11/14 10:36:46 by sel-kelk          #+#    #+#             */
-/*   Updated: 2026/11/18 13:31:59 by sel-kelk         ###   ########.fr       */
+/*   Updated: 2026/11/22 09:33:20 by sel-kelk         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,6 +27,7 @@ ssize_t	ft_strlen_until_terminator(char *buf);
 void	ft_copy_leftover_to_leftover(char *buf, char *leftover);
 char	*get_next_line_helper(int fd);
 int		its_line(int old, char *older_line, char *new_line);
+char	*ft_free_lines(char *older_line, char *new_line, size_t old);
 char	*get_next_line(int fd);
 
 #endif
