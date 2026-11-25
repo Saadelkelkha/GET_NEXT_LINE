@@ -6,7 +6,7 @@
 /*   By: sel-kelk <sel-kelk@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/11/14 10:36:28 by sel-kelk          #+#    #+#             */
-/*   Updated: 2026/11/25 10:51:09 by sel-kelk         ###   ########.fr       */
+/*   Updated: 2026/11/25 11:29:45 by sel-kelk         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,10 +34,7 @@ char	*get_next_line_helper(int fd)
 	if (ret >= 0)
 		buf[old + ret] = '\0';
 	if (!ft_strlen(buf) || ret == -1)
-	{
-		free(buf);
-		return (NULL);
-	}
+		return (free(buf), NULL);
 	ft_copy_leftover_to_leftover(buf, leftover);
 	return (buf);
 }
