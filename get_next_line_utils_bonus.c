@@ -3,84 +3,107 @@
 /*                                                        :::      ::::::::   */
 /*   get_next_line_utils_bonus.c                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: sel-kelk <sel-kelk@student.42.fr>          +#+  +:+       +#+        */
+/*   By: sel-kelk <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/11/14 10:36:37 by sel-kelk          #+#    #+#             */
-/*   Updated: 2026/11/22 09:41:43 by sel-kelk         ###   ########.fr       */
+/*   Created: 2026/11/26 10:20:40 by sel-kelk          #+#    #+#             */
+/*   Updated: 2026/11/26 10:20:41 by sel-kelk         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "get_next_line_bonus.h"
 
-ssize_t	ft_strlen(const char *s)
+size_t	ft_strlen(const char *s)
 {
 	size_t	i;
 
-	if (!s)
-		return (0);
 	i = 0;
 	while (s[i])
 		i++;
 	return (i);
 }
 
-ssize_t	ft_strlcpy(char *dst, const char *src, size_t size)
+char	*ft_strdup(const char *s)
 {
+	char	*c;
 	size_t	i;
 
 	i = 0;
-	if (size > 0)
-	{
-		while (src[i] && i < size - 1)
-		{
-			dst[i] = src[i];
-			i++;
-		}
-		dst[i] = '\0';
-	}
-	return (ft_strlen(src));
-}
-
-ssize_t	ft_strlen_until_terminator(char *buf)
-{
-	size_t	i;
-
-	i = 0;
-	while (buf[i] && buf[i] != '\n')
+	while (s[i])
 		i++;
-	return (i);
-}
-
-void	ft_copy_leftover_to_leftover(char *buf, char *leftover)
-{
-	if (ft_strlen(buf) > ft_strlen_until_terminator(buf))
-	{
-		ft_strlcpy(leftover, buf + ft_strlen_until_terminator(buf) + 1,
-			(size_t)BUFFER_SIZE + 1);
-		buf[ft_strlen_until_terminator(buf) + 1] = '\0';
-	}
-	else
-		leftover[0] = '\0';
-}
-
-int	its_line_or_free_lines(int old, char *older_line, char *new_line, int swap)
-{
-	if (swap == 2)
-	{
-		if (old)
-			free(older_line);
-		if (ft_strlen(new_line) > ft_strlen_until_terminator(new_line))
-		{
-			free(new_line);
-			return (1);
-		}
+	c = malloc(i + 1);
+	if (!c)
 		return (0);
-	}
-	else
+	i = 0;
+	while (s[i])
 	{
-		if (old)
-			free(older_line);
-		free(new_line);
-		return (2);
+		c[i] = s[i];
+		i++;
 	}
+	c[i] = s[i];
+	return (c);
+}
+
+char	*ft_strchr(const char *s, int c)
+{
+	char	*sc;
+
+	if (!s)
+		return (NULL);
+	sc = (char *)s;
+	while (*sc)
+	{
+		if (*sc == (char)c)
+			return (sc);
+		sc++;
+	}
+	if (*sc == (char)c)
+		return (sc);
+	return (0);
+}
+
+size_t	ft_strlcat(char *dst, const char *src, size_t size)
+{
+	size_t	i;
+	size_t	j;
+	size_t	srclen;
+
+	i = 0;
+	while (i < size && dst[i] != '\0')
+		i++;
+	srclen = ft_strlen(src);
+	if (i < size)
+	{
+		j = 0;
+		while ((i + j + 1) < size && src[j] != '\0')
+		{
+			dst[i + j] = src[j];
+			j++;
+		}
+		dst[i + j] = '\0';
+		return (i + srclen);
+	}
+	return (size + srclen);
+}
+
+char	*ft_strjoin(char const *s1, char const *s2)
+{
+	char	*conc;
+	size_t	len_s1;
+	size_t	len_s2;
+
+	if (!s2)
+		return (NULL);
+	if (s1)
+		len_s1 = ft_strlen(s1);
+	else
+		len_s1 = 0;
+	len_s2 = ft_strlen(s2);
+	conc = malloc(len_s1 + len_s2 + 1);
+	if (!conc)
+		return (NULL);
+	conc[0] = '\0';
+	if (s1)
+		ft_strlcat(conc, s1, len_s1 + 1);
+	ft_strlcat(conc, s2, len_s1 + len_s2 + 1);
+	return (conc);
 }

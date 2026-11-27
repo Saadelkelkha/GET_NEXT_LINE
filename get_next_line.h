@@ -3,17 +3,16 @@
 /*                                                        :::      ::::::::   */
 /*   get_next_line.h                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: sel-kelk <sel-kelk@student.42.fr>          +#+  +:+       +#+        */
+/*   By: sel-kelk <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/11/14 10:36:46 by sel-kelk          #+#    #+#             */
-/*   Updated: 2026/11/22 09:33:20 by sel-kelk         ###   ########.fr       */
+/*   Created: 2026/11/26 10:20:28 by sel-kelk          #+#    #+#             */
+/*   Updated: 2026/11/26 10:20:29 by sel-kelk         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef GET_NEXT_LINE_H
 # define GET_NEXT_LINE_H
 
-# include <fcntl.h>
 # include <unistd.h>
 # include <stdlib.h>
 
@@ -21,13 +20,11 @@
 #  define BUFFER_SIZE 42
 # endif
 
-ssize_t	ft_strlen(const char *s);
-ssize_t	ft_strlcpy(char *dst, const char *src, size_t size);
-ssize_t	ft_strlen_until_terminator(char *buf);
-void	ft_copy_leftover_to_leftover(char *buf, char *leftover);
-char	*get_next_line_helper(int fd);
-int		its_line(int old, char *older_line, char *new_line);
-char	*ft_free_lines(char *older_line, char *new_line, size_t old);
+size_t	ft_strlen(const char *s);
+char	*ft_strdup(const char *s);
+char	*ft_strchr(const char *s, int c);
+size_t	ft_strlcat(char *dst, const char *src, size_t size);
+char	*ft_strjoin(char const *s1, char const *s2);
 char	*get_next_line(int fd);
 
 #endif

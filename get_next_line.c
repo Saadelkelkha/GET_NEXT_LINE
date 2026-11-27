@@ -3,84 +3,99 @@
 /*                                                        :::      ::::::::   */
 /*   get_next_line.c                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: sel-kelk <sel-kelk@student.42.fr>          +#+  +:+       +#+        */
+/*   By: sel-kelk <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/11/14 10:36:28 by sel-kelk          #+#    #+#             */
-/*   Updated: 2026/11/23 14:17:44 by sel-kelk         ###   ########.fr       */
+/*   Created: 2026/11/26 10:19:56 by sel-kelk          #+#    #+#             */
+/*   Updated: 2026/11/26 10:19:58 by sel-kelk         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "get_next_line.h"
 
-char	*get_next_line_helper(int fd)
+static char	*next(char *s)
 {
-	static char	leftover[BUFFER_SIZE];
-	char		*buf;
-	ssize_t		ret;
-	size_t		old;
+	char	*p;
+	int		i;
 
-	buf = malloc((size_t)BUFFER_SIZE + 1);
-	if (!buf)
+	if (!s)
 		return (NULL);
-	buf[0] = '\0';
-	old = ft_strlcpy(buf, leftover, (size_t)BUFFER_SIZE + 1);//Buffer_size
-	ret = read(fd, buf + old, BUFFER_SIZE - old);
-	if (ret >= 0)
-		buf[old + ret] = '\0';
-	if (!ft_strlen(buf) || ret == -1)
+	i = 0;
+	while (s[i] && s[i] != '\n')
+		i++;
+	if (!s[i])
 	{
-		free(buf);
+		free(s);
 		return (NULL);
 	}
-	ft_copy_leftover_to_leftover(buf, leftover);
-	return (buf);
+	p = ft_strdup(s + i + 1);
+	free(s);
+	return (p);
 }
 
-int	its_line(int old, char *older_line, char *new_line)
+static char	*line(char *s)
 {
-	if (old)
-		free(older_line);
-	if (ft_strlen(new_line) > ft_strlen_until_terminator(new_line))
+	char	*p;
+	size_t	i;
+
+	if (!s || !*s)
+		return (NULL);
+	i = 0;
+	while (s[i] && s[i] != '\n')
+		i++;
+	if (s[i] == '\n')
+		p = malloc(i + 1 + 1);
+	else
+		p = malloc(i + 1);
+	if (!p)
+		return (NULL);
+	i = 0;
+	while (s[i] != '\n' && s[i])
 	{
-		free(new_line);
-		return (1);
+		p[i] = s[i];
+		i++;
 	}
-	return (0);
+	if (s[i] == '\n')
+		p[i++] = '\n';
+	p[i] = '\0';
+	return (p);
 }
 
-char	*ft_free_lines(char *older_line, char *new_line, size_t old)
+static char	*get_next_line_helper(char *b, char **s)
 {
-	if (old)
-		free(older_line);
-	free(new_line);
-	return (NULL);
+	char	*l;
+
+	free(b);
+	l = line(*s);
+	if (!l)
+		return (free(*s), *s = NULL, NULL);
+	*s = next(*s);
+	return (l);
 }
 
 char	*get_next_line(int fd)
 {
-	char		*line;
-	char		*older_line;
-	char		*new_line;
-	size_t		old;
+	static char	*s;
+	char		*b;
+	char		*tmp;
+	size_t		n;
 
-	new_line = get_next_line_helper(fd);
-	line = "\0";
-	while (new_line)
-	{
-		old = ft_strlen(line);
-		older_line = line;
-		line = malloc(old + BUFFER_SIZE + 1);
-		if (!line)
-			return (ft_free_lines(older_line, new_line, old));
-		line[0] = '\0';
-		ft_strlcpy(line, older_line, old + BUFFER_SIZE + 1);
-		ft_strlcpy(line + ft_strlen(line), new_line, old + BUFFER_SIZE + 1);
-		if (its_line(old, older_line, new_line))
-			break ;
-		free(new_line);
-		new_line = get_next_line_helper(fd);
-	}
-	if (!ft_strlen(line))
+	if (fd < 0 || BUFFER_SIZE <= 0)
 		return (NULL);
-	return (line);
+	b = malloc((size_t)BUFFER_SIZE + 1);
+	if (!b)
+		return (free(s), s = NULL, NULL);
+	n = 1;
+	while (!ft_strchr(s, '\n') && n > 0)
+	{
+		n = read(fd, b, BUFFER_SIZE);
+		if (n < 0)
+			return (free(b), free(s), s = NULL, NULL);
+		b[n] = '\0';
+		tmp = ft_strjoin(s, b);
+		free(s);
+		s = tmp;
+		if (!s)
+			return (free(b), NULL);
+	}
+	return (get_next_line_helper(b, &s));
 }
