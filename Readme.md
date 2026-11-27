@@ -97,53 +97,40 @@ The second point is the reason for the `static` variable: it keeps the unread te
 
 ### Mandatory part
 
-The work is split in two functions.
+State is kept in one `static char *s`, a heap string holding text that was read but not yet returned (the "stash").
 
-**`get_next_line_helper(fd)`** performs **one `read`** and returns one piece of text. It uses a `static char leftover[BUFFER_SIZE]` that holds text read earlier but not yet returned.
-
+**`get_next_line(fd)`**
 1. Allocate a buffer of `BUFFER_SIZE + 1` bytes.
-2. Copy the leftover into the buffer, then call `read` to fill the rest of the buffer (at most `BUFFER_SIZE` characters in total) and add a `'\0'`.
-3. If the buffer is empty, or `read` returned `-1`, free the buffer and return `NULL` (end of file or error).
-4. If the buffer contains a `\n`, everything after the first `\n` is saved back into the leftover and cut from the buffer. Otherwise the leftover is emptied.
-5. Return the buffer.
+2. While the stash contains no `\n` and `read` has not reached EOF: `read` up to `BUFFER_SIZE` bytes, add a `'\0'`, and append them to the stash with `ft_strjoin` (the old stash is freed).
+3. Hand over to `get_next_line_helper`.
+4. On a `read` error or a failed `malloc`, free the buffer and the stash, reset the stash to `NULL`, and return `NULL`.
 
-**`get_next_line(fd)`** builds the line from these pieces.
-
-1. Call the helper to get a piece.
-2. Join it to the text accumulated so far by allocating a new string and freeing the old one.
-3. If the piece contains a `\n`, the line is complete and it is returned. Otherwise, call the helper again.
-4. If the helper returns `NULL`, the loop stops. The text accumulated so far is returned, or `NULL` if it is empty.
-5. If a `malloc` fails, everything allocated so far is freed and `NULL` is returned.
+**`get_next_line_helper(b, &s)`**
+1. Free the read buffer.
+2. `line(s)` copies the stash up to and including the first `\n` (or to the end) into a new string.
+3. If there is nothing to return (EOF with an empty stash), or the allocation fails, free the stash, set it to `NULL`, and return `NULL`.
+4. `next(s)` replaces the stash with the text after the first `\n` (`ft_strdup`) and frees the old stash. If no `\n` is left, the stash is freed and set to `NULL`.
 
 ### Why this design
 
-- **One `read` per helper call.** The file is never read further than needed, as the subject requires.
-- **The leftover needs only `BUFFER_SIZE` bytes.** It is saved only when the buffer contains a `\n`, and it holds what comes after it. Since the `\n` takes at least one character, the leftover holds at most `BUFFER_SIZE - 1` characters plus the `'\0'`.
-- **The line is a separate copy.** The caller can `free` it freely, and it never shares memory with the leftover.
-- **It works for every `BUFFER_SIZE`:** with size 1 a line is built one character at a time, and with a huge size one `read` can contain many lines that are handed out one per call.
-- **Memory ownership is explicit.** Each piece returned by the helper is freed by `get_next_line` once it has been joined, and the previous accumulated text is freed each time it is replaced.
+- **Reads only as needed.** The loop stops as soon as the stash contains a `\n`, so the file is never read further than required.
+- **The returned line is a separate copy.** The caller can `free` it without affecting the stash.
+- **Works for any `BUFFER_SIZE`.** With 1, the line is built one character at a time. With a huge value, one `read` can hold many lines, which are handed out one per call.
+- **Explicit ownership.** Every failure path frees the buffer and the stash and leaves no dangling pointer.
 
-**Trade-off.** Joining a piece copies the text accumulated so far into a new block. For a very long line read with a very small `BUFFER_SIZE`, the total cost grows with the square of the line length. It is simple, safe and fast enough for normal use, and it avoids the complexity of resizing buffers or keeping a list of chunks.
+**Trade-off.** `ft_strjoin` copies the whole stash on every read, and `ft_strchr` rescans it each iteration. For a very long line with a very small `BUFFER_SIZE`, the cost grows with the square of the line length. This is simple and safe, and fast enough for normal use.
 
 ### Bonus part
 
-The leftover can no longer be a single array, because each file descriptor needs its own. The bonus keeps **one node per file descriptor** in a singly linked list:
+Each file descriptor needs its own stash, so the single static variable becomes an array of stashes indexed by `fd`:
 
-```c
-typedef struct s_list
-{
-	char			*leftover;
-	int				fd;
-	struct s_list	*next;
-}	t_list;
-```
+    static char *s[OPEN_MAX];   /* OPEN_MAX = 1024 */
 
-- The head of the list is the **only `static` variable**: `static t_list *leftover_list;`.
-- At the start of each helper call, the node for `fd` is searched in the list. If it does not exist, it is created with a `malloc`ed leftover of `BUFFER_SIZE` bytes, set to an empty string, and added to the list. If `fd < 0` or `BUFFER_SIZE <= 0`, or if an allocation fails, `NULL` is returned.
-- The reading algorithm is exactly the one above, but it works on `node->leftover`.
-- When the helper returns `NULL` because a file descriptor reached its end (or an error occurred), its leftover and its node are freed and unlinked from the list, so the memory is released and the same fd number can be reused later by another file.
+- It is still **one static variable**, and the algorithm is identical to the mandatory part but works on `s[fd]`.
+- `fd < 0`, `fd >= OPEN_MAX`, or `BUFFER_SIZE <= 0` returns `NULL`, so an out-of-range fd can never index outside the array.
+- When an fd reaches EOF or hits an error, `s[fd]` is freed and set to `NULL`, so the same fd number can be reused by another file.
 
-A linked list was chosen over a fixed array indexed by `fd` because it has no maximum number of file descriptors, and it still counts as a single static variable, since the nodes themselves live on the heap.
+**Trade-off.** An array is simpler and faster than a list (direct access, no search), but it limits the function to 1024 file descriptors.
 
 ## Resources
 
